@@ -1,0 +1,84 @@
+name: Build and Release
+
+on:
+  schedule:
+    - cron: "0 0 */14 * *"  # Every 2 weeks
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Download JMdict
+        run: bun run scripts/download.ts
+
+      - name: Build JSON
+        run: bun run scripts/build.ts
+
+      - name: Compress
+        run: bun run scripts/compress.ts
+
+      - name: Validate
+        run: bun run scripts/validate.ts
+
+      - name: Read stats
+        id: stats
+        run: |
+          BUILD_STATS=$(cat dist/build-stats.json)
+          COMPRESS_STATS=$(cat dist/compress-stats.json)
+          
+          ENTRIES=$(echo $BUILD_STATS | jq -r '.filtered')
+          UNCOMPRESSED=$(echo $BUILD_STATS | jq -r '.sizeBytes')
+          COMPRESSED=$(echo $COMPRESS_STATS | jq -r '.compressedBytes')
+          
+          echo "entries=$ENTRIES" >> $GITHUB_OUTPUT
+          echo "uncompressed=$UNCOMPRESSED" >> $GITHUB_OUTPUT
+          echo "compressed=$COMPRESSED" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          DATE=$(date +%Y%m%d)
+          TAG_NAME="jmdict-tokime+${DATE}"
+          
+          UNCOMPRESSED_MB=$(echo "${{ steps.stats.outputs.uncompressed }}" | awk '{printf "%.2f", $1/1024/1024}')
+          COMPRESSED_MB=$(echo "${{ steps.stats.outputs.compressed }}" | awk '{printf "%.2f", $1/1024/1024}')
+          
+          gh release create "$TAG_NAME" \
+            --title "JMdict-Tokime ${DATE}" \
+            --notes-file - << EOF
+          ## JMdict-Tokime Release
+
+          Parsed from JMdict XML, extracting only fields needed by Tokime.
+
+          ### Output Format
+          - JSON Lines format (one entry per line)
+          - Contains: id, kanji (with priority tags), kana (with priority + appliesToKanji), sense (with partOfSpeech + gloss)
+
+          ### Stats
+          - Entries: ${{ steps.stats.outputs.entries }}
+          - Uncompressed size: \${UNCOMPRESSED_MB} MB
+          - Compressed size: \${COMPRESSED_MB} MB
+
+          ### License
+          JMdict is CC BY-SA 4.0 from EDRDG. This output is also CC BY-SA 4.0.
+          EOF
+          
+          gh release upload "$TAG_NAME" dist/jmdict-tokime.json.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
