@@ -3,6 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "download": "bun run scripts/download.ts",
+    "build": "bun run scripts/build.ts",
+    "compress": "bun run scripts/compress.ts",
+    "validate": "bun run scripts/validate.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

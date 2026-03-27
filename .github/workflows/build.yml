@@ -14,27 +14,30 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: latest
 
       - name: Install dependencies
         run: bun install
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Download JMdict
-        run: bun run scripts/download.ts
+        run: bun run download
 
       - name: Build JSON
-        run: bun run scripts/build.ts
+        run: bun run build
 
       - name: Compress
-        run: bun run scripts/compress.ts
+        run: bun run compress
 
       - name: Validate
-        run: bun run scripts/validate.ts
+        run: bun run validate
 
       - name: Read stats
         id: stats
