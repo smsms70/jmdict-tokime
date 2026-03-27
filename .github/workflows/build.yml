@@ -45,13 +45,26 @@ jobs:
           BUILD_STATS=$(cat dist/build-stats.json)
           COMPRESS_STATS=$(cat dist/compress-stats.json)
           
-          ENTRIES=$(echo $BUILD_STATS | jq -r '.filtered')
-          UNCOMPRESSED=$(echo $BUILD_STATS | jq -r '.sizeBytes')
-          COMPRESSED=$(echo $COMPRESS_STATS | jq -r '.compressedBytes')
+          # Tokime stats
+          TOKIME_ENTRIES=$(echo $BUILD_STATS | jq -r '.filtered')
+          TOKIME_UNCOMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-tokime.json".uncompressedBytes')
+          TOKIME_COMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-tokime.json".compressedBytes')
           
-          echo "entries=$ENTRIES" >> $GITHUB_OUTPUT
-          echo "uncompressed=$UNCOMPRESSED" >> $GITHUB_OUTPUT
-          echo "compressed=$COMPRESSED" >> $GITHUB_OUTPUT
+          # Common stats
+          COMMON_UNCOMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-common.json".uncompressedBytes')
+          COMMON_COMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-common.json".compressedBytes')
+          
+          # Calculate MB values
+          TOKIME_UNCOMPRESSED_MB=$(echo $TOKIME_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          TOKIME_COMPRESSED_MB=$(echo $TOKIME_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          COMMON_UNCOMPRESSED_MB=$(echo $COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          COMMON_COMPRESSED_MB=$(echo $COMMON_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          
+          echo "tokime_entries=$TOKIME_ENTRIES" >> $GITHUB_OUTPUT
+          echo "tokime_uncompressed_mb=$TOKIME_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "tokime_compressed_mb=$TOKIME_COMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "common_uncompressed_mb=$COMMON_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "common_compressed_mb=$COMMON_COMPRESSED_MB" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: github.event_name == 'workflow_dispatch'
@@ -59,29 +72,30 @@ jobs:
           DATE=$(date +%Y%m%d)
           TAG_NAME="jmdict-tokime+${DATE}"
           
-          UNCOMPRESSED_MB=$(echo "${{ steps.stats.outputs.uncompressed }}" | awk '{printf "%.2f", $1/1024/1024}')
-          COMPRESSED_MB=$(echo "${{ steps.stats.outputs.compressed }}" | awk '{printf "%.2f", $1/1024/1024}')
-          
           gh release create "$TAG_NAME" \
             --title "JMdict-Tokime ${DATE}" \
             --notes-file - << EOF
           ## JMdict-Tokime Release
 
-          Parsed from JMdict XML, extracting only fields needed by Tokime.
+          This release contains parsed versions of JMdict for English translations.
 
-          ### Output Format
-          - JSON Lines format (one entry per line)
-          - Contains: id, kanji (with priority tags), kana (with priority + appliesToKanji), sense (with partOfSpeech + gloss)
+          ### Files
 
-          ### Stats
-          - Entries: ${{ steps.stats.outputs.entries }}
-          - Uncompressed size: \${UNCOMPRESSED_MB} MB
-          - Compressed size: \${COMPRESSED_MB} MB
+          #### jmdict-tokime.json.zip
+          Filtered version with only fields needed by the Tokime app (priority tags, English glosses).
+          - Entries: ${{ steps.stats.outputs.tokime_entries }}
+          - Size: ${{ steps.stats.outputs.tokime_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.tokime_compressed_mb }} MB (compressed)
+
+          #### jmdict-common.json.zip
+          Same entries as above but with all original XML tags from JMdict (full data).
+          - Entries: ${{ steps.stats.outputs.tokime_entries }}
+          - Size: ${{ steps.stats.outputs.common_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.common_compressed_mb }} MB (compressed)
 
           ### License
           JMdict is CC BY-SA 4.0 from EDRDG. This output is also CC BY-SA 4.0.
           EOF
           
           gh release upload "$TAG_NAME" dist/jmdict-tokime.json.zip
+          gh release upload "$TAG_NAME" dist/jmdict-common.json.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

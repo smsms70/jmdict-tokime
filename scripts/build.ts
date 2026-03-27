@@ -1,9 +1,9 @@
-import { readFileSync, writeFileSync, createWriteStream, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, createWriteStream, mkdirSync, statSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
-import { Transform } from "node:stream";
 
 const XML_PATH = "raw/JMdict_e.xml";
-const OUTPUT_PATH = "dist/jmdict-tokime.json";
+const TOKIME_OUTPUT = "dist/jmdict-tokime.json";
+const COMMON_OUTPUT = "dist/jmdict-common.json";
 
 mkdirSync("dist", { recursive: true });
 
@@ -96,8 +96,8 @@ function extractSense(sense: unknown): {
   return result;
 }
 
-const writeStream = createWriteStream(OUTPUT_PATH);
-let entryCount = 0;
+const tokimeStream = createWriteStream(TOKIME_OUTPUT);
+const commonStream = createWriteStream(COMMON_OUTPUT);
 let filteredCount = 0;
 
 for (const entry of entries) {
@@ -142,21 +142,44 @@ for (const entry of entries) {
     sense: senses,
   };
 
-  writeStream.write(JSON.stringify(processed) + "\n");
+  tokimeStream.write(JSON.stringify(processed) + "\n");
+
+  const fullEntry = {
+    id,
+    ent_seq: entry.ent_seq,
+    k_ele: entry.k_ele,
+    r_ele: entry.r_ele,
+    sense: entry.sense,
+  };
+  commonStream.write(JSON.stringify(fullEntry) + "\n");
+
   filteredCount++;
 }
 
-writeStream.end();
+tokimeStream.end();
+commonStream.end();
 
-writeStream.on("finish", () => {
-  const stats = require("node:fs").statSync(OUTPUT_PATH);
+tokimeStream.on("finish", () => {
+  const tokimeStats = statSync(TOKIME_OUTPUT);
+  const commonStats = statSync(COMMON_OUTPUT);
+
   const output = {
     totalSource: entries.length,
     filtered: filteredCount,
-    sizeBytes: stats.size,
+    tokime: {
+      file: "jmdict-tokime.json",
+      sizeBytes: tokimeStats.size,
+    },
+    common: {
+      file: "jmdict-common.json",
+      sizeBytes: commonStats.size,
+    },
   };
-  require("node:fs").writeFileSync("dist/build-stats.json", JSON.stringify(output));
+
+  writeFileSync("dist/build-stats.json", JSON.stringify(output));
+
   console.log(`Entries after filtering: ${filteredCount}`);
-  console.log(`Output size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`Tokime output: ${(tokimeStats.size / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`Common output: ${(commonStats.size / 1024 / 1024).toFixed(2)} MB`);
   console.log("Done!");
 });
