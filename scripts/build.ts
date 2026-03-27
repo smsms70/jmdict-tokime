@@ -1,9 +1,11 @@
-import { readFileSync, writeFileSync, createWriteStream } from "node:fs";
+import { readFileSync, writeFileSync, createWriteStream, mkdirSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
 import { Transform } from "node:stream";
 
 const XML_PATH = "raw/JMdict_e.xml";
 const OUTPUT_PATH = "dist/jmdict-tokime.json";
+
+mkdirSync("dist", { recursive: true });
 
 interface JMdictEntry {
   id: string;
