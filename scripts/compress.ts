@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, statSync } from "node:fs";
-import { gzipSync } from "fflate";
+import { zipSync } from "fflate";
 
 const FILES = [
   { input: "dist/jmdict-tokime.json", output: "dist/jmdict-tokime.json.zip" },
@@ -16,7 +16,8 @@ for (const file of FILES) {
 
   console.log(`  Uncompressed size: ${(inputSize / 1024 / 1024).toFixed(2)} MB`);
 
-  const compressed = gzipSync(inputBuffer);
+  const filename = file.input.replace("dist/", "");
+  const compressed = zipSync({ [filename]: inputBuffer });
   writeFileSync(file.output, compressed);
 
   const outputSize = compressed.byteLength;

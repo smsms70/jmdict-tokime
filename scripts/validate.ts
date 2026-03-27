@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { gunzipSync } from "fflate";
+import { unzipSync } from "fflate";
 
 const ZIP_FILES = [
   "dist/jmdict-tokime.json.zip",
@@ -19,7 +19,8 @@ for (const zipPath of ZIP_FILES) {
   console.log(`\n=== Validating ${zipPath} ===\n`);
 
   const zipBuffer = readFileSync(zipPath);
-  const jsonBuffer = gunzipSync(zipBuffer);
+  const unzipped = unzipSync(zipBuffer);
+  const jsonBuffer = Object.values(unzipped)[0];
   const jsonStr = new TextDecoder().decode(jsonBuffer);
 
   const lines = jsonStr.trim().split("\n");
