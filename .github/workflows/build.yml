@@ -57,7 +57,7 @@ jobs:
           # Calculate MB values
           TOKIME_UNCOMPRESSED_MB=$(echo $TOKIME_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           TOKIME_COMPRESSED_MB=$(echo $TOKIME_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
-          COMMON_UNCOMPRESSED_MB=$(echo $COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          COMMON_UNCOMPRESSED_MB=$(echo $COMMON_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           COMMON_COMPRESSED_MB=$(echo $COMMON_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           
           echo "tokime_entries=$TOKIME_ENTRIES" >> $GITHUB_OUTPUT
