@@ -44,6 +44,8 @@ const VALID_PRI_TAGS = new Set([
   ...Array.from({ length: 48 }, (_, i) => `nf${String(i + 1).padStart(2, "0")}`),
 ]);
 
+const PARTICLE_AUX_TAGS = new Set(["particle", "auxiliary", "auxiliary verb", "auxiliary adjective"]);
+
 function hasValidPriority(pri: string | string[] | undefined): boolean {
   if (!pri) return false;
   const arr = Array.isArray(pri) ? pri : [pri];
@@ -99,6 +101,7 @@ function extractSense(sense: unknown): {
 const tokimeStream = createWriteStream(TOKIME_OUTPUT);
 const commonStream = createWriteStream(COMMON_OUTPUT);
 let filteredCount = 0;
+let particleAuxCount = 0;
 
 for (const entry of entries) {
   const id = String(entry.ent_seq);
@@ -131,9 +134,15 @@ for (const entry of entries) {
   const senses = extractSense(entry.sense);
   if (senses.length === 0) continue;
 
-  const hasKanjiPriority = kanji.some((k) => hasValidPriority(k.priority));
-  const hasKanaPriority = kana.some((k) => hasValidPriority(k.priority));
-  if (!hasKanjiPriority && !hasKanaPriority) continue;
+   const hasKanjiPriority = kanji.some((k) => hasValidPriority(k.priority));
+   const hasKanaPriority = kana.some((k) => hasValidPriority(k.priority));
+   
+   // Check if this entry contains particle/auxiliary POS tags
+   const hasParticleAux = senses.some(s => 
+     s.partOfSpeech.some(pos => PARTICLE_AUX_TAGS.has(pos))
+   );
+   
+   if (!hasKanjiPriority && !hasKanaPriority && !hasParticleAux) continue;
 
   const processed: JMdictEntry = {
     id,
@@ -153,7 +162,8 @@ for (const entry of entries) {
   };
   commonStream.write(JSON.stringify(fullEntry) + "\n");
 
-  filteredCount++;
+   filteredCount++;
+   if (hasParticleAux) particleAuxCount++;
 }
 
 tokimeStream.end();
@@ -163,18 +173,19 @@ tokimeStream.on("finish", () => {
   const tokimeStats = statSync(TOKIME_OUTPUT);
   const commonStats = statSync(COMMON_OUTPUT);
 
-  const output = {
-    totalSource: entries.length,
-    filtered: filteredCount,
-    tokime: {
-      file: "jmdict-tokime.json",
-      sizeBytes: tokimeStats.size,
-    },
-    common: {
-      file: "jmdict-common.json",
-      sizeBytes: commonStats.size,
-    },
-  };
+   const output = {
+     totalSource: entries.length,
+     filtered: filteredCount,
+     particleAuxIncluded: particleAuxCount,
+     tokime: {
+       file: "jmdict-tokime.json",
+       sizeBytes: tokimeStats.size,
+     },
+     common: {
+       file: "jmdict-common.json",
+       sizeBytes: commonStats.size,
+     },
+   };
 
   writeFileSync("dist/build-stats.json", JSON.stringify(output));
 
