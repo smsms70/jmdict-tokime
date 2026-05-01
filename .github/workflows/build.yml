@@ -34,7 +34,7 @@ jobs:
         run: bun run build
 
       - name: Build freq JSON
-        run: bun run build-freq.ts
+        run: bun run build-freq
 
       - name: Compress
         run: bun run compress
