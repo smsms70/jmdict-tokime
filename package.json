@@ -6,6 +6,7 @@
   "scripts": {
     "download": "bun run scripts/download.ts",
     "build": "bun run scripts/build.ts",
+    "build-freq": "bun run scripts/build-freq.ts",
     "compress": "bun run scripts/compress.ts",
     "validate": "bun run scripts/validate.ts"
   },
