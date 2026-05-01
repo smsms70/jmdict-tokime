@@ -7,6 +7,8 @@ dist
 
 # raw source files (downloaded JMdict XML)
 raw
+# !raw/JPDB_v2.2_Frequency_Kana_2024-10-13.zip
+
 *.tgz
 
 # code coverage

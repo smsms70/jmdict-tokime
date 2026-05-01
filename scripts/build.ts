@@ -134,15 +134,15 @@ for (const entry of entries) {
   const senses = extractSense(entry.sense);
   if (senses.length === 0) continue;
 
-   const hasKanjiPriority = kanji.some((k) => hasValidPriority(k.priority));
-   const hasKanaPriority = kana.some((k) => hasValidPriority(k.priority));
-   
-   // Check if this entry contains particle/auxiliary POS tags
-   const hasParticleAux = senses.some(s => 
-     s.partOfSpeech.some(pos => PARTICLE_AUX_TAGS.has(pos))
-   );
-   
-   if (!hasKanjiPriority && !hasKanaPriority && !hasParticleAux) continue;
+  const hasKanjiPriority = kanji.some((k) => hasValidPriority(k.priority));
+  const hasKanaPriority = kana.some((k) => hasValidPriority(k.priority));
+
+  // Check if this entry contains particle/auxiliary POS tags
+  const hasParticleAux = senses.some(s =>
+    s.partOfSpeech.some(pos => PARTICLE_AUX_TAGS.has(pos))
+  );
+
+  if (!hasKanjiPriority && !hasKanaPriority && !hasParticleAux) continue;
 
   const processed: JMdictEntry = {
     id,
@@ -162,8 +162,8 @@ for (const entry of entries) {
   };
   commonStream.write(JSON.stringify(fullEntry) + "\n");
 
-   filteredCount++;
-   if (hasParticleAux) particleAuxCount++;
+  filteredCount++;
+  if (hasParticleAux) particleAuxCount++;
 }
 
 tokimeStream.end();
@@ -173,19 +173,19 @@ tokimeStream.on("finish", () => {
   const tokimeStats = statSync(TOKIME_OUTPUT);
   const commonStats = statSync(COMMON_OUTPUT);
 
-   const output = {
-     totalSource: entries.length,
-     filtered: filteredCount,
-     particleAuxIncluded: particleAuxCount,
-     tokime: {
-       file: "jmdict-tokime.json",
-       sizeBytes: tokimeStats.size,
-     },
-     common: {
-       file: "jmdict-common.json",
-       sizeBytes: commonStats.size,
-     },
-   };
+  const output = {
+    totalSource: entries.length,
+    filtered: filteredCount,
+    particleAuxIncluded: particleAuxCount,
+    tokime: {
+      file: "jmdict-tokime.json",
+      sizeBytes: tokimeStats.size,
+    },
+    common: {
+      file: "jmdict-common.json",
+      sizeBytes: commonStats.size,
+    },
+  };
 
   writeFileSync("dist/build-stats.json", JSON.stringify(output));
 

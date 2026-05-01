@@ -32,6 +32,7 @@ jobs:
 
       - name: Build JSON
         run: bun run build
+        run: bun run build-freq.ts
 
       - name: Compress
         run: bun run compress
@@ -91,11 +92,15 @@ jobs:
           - Entries: ${{ steps.stats.outputs.tokime_entries }}
           - Size: ${{ steps.stats.outputs.common_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.common_compressed_mb }} MB (compressed)
 
+          #### jpdb-freq.json.zip
+          Parsed version of frequency jpdb file.
+          
           ### License
           JMdict is CC BY-SA 4.0 from EDRDG. This output is also CC BY-SA 4.0.
           EOF
           
           gh release upload "$TAG_NAME" dist/jmdict-tokime.json.zip
           gh release upload "$TAG_NAME" dist/jmdict-common.json.zip
+          gh release upload "$TAG_NAME" dist/jpdb-freq-v2.json.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

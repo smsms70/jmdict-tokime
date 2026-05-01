@@ -53,17 +53,22 @@ for (const zipPath of ZIP_FILES) {
       const hasKana = "kana" in entry && Array.isArray(entry.kana);
       const hasSense = "sense" in entry && Array.isArray(entry.sense);
 
-      const kanjiTexts = hasKanji ? (entry.kanji as unknown[]).map((k: unknown) => (k as { text: string }).text) : [];
-      const kanaTexts = hasKana ? (entry.kana as unknown[]).map((k: unknown) => (k as { text: string }).text) : [];
+      const kanjiTexts = hasKanji ? (entry.kanji as unknown[])
+        .map((k: unknown) => (k as { text: string }).text) : [];
+
+      const kanaTexts = hasKana ? (entry.kana as unknown[])
+        .map((k: unknown) => (k as { text: string }).text) : [];
 
       const hasExpectedKanji = kanjiTexts.includes(check.expectedKanji);
       const hasExpectedKana = kanaTexts.includes(check.expectedKana);
 
       const kanjiHasPriority = hasKanji && (entry.kanji as unknown[]).some(
-        (k: unknown) => (k as { priority?: unknown[] }).priority && (k as { priority: unknown[] }).priority.length > 0
+        (k: unknown) => (k as { priority?: unknown[] })
+          .priority && (k as { priority: unknown[] }).priority.length > 0
       );
       const kanaHasPriority = hasKana && (entry.kana as unknown[]).some(
-        (k: unknown) => (k as { priority?: unknown[] }).priority && (k as { priority: unknown[] }).priority.length > 0
+        (k: unknown) => (k as { priority?: unknown[] })
+          .priority && (k as { priority: unknown[] }).priority.length > 0
       );
 
       const allGlosses: string[] = [];
@@ -80,19 +85,30 @@ for (const zipPath of ZIP_FILES) {
       }
       const hasGloss = allGlosses.length > 0;
 
-      const isValid = hasId && hasKanji && hasKana && hasSense && (hasExpectedKanji || hasExpectedKana) && (kanjiHasPriority || kanaHasPriority) && hasGloss;
+      const isValid = hasId &&
+        hasKanji &&
+        hasKana &&
+        hasSense &&
+        (hasExpectedKanji || hasExpectedKana) &&
+        (kanjiHasPriority || kanaHasPriority) &&
+        hasGloss;
 
       if (isValid) {
-        console.log(`✅ ${check.id}: ${check.expectedKanji || ""} / ${check.expectedKana}`);
+        console.log(`✅ ${check.id}: ${check.expectedKanji || ""} 
+                    / ${check.expectedKana}`);
         console.log(`   kanji: ${kanjiTexts.join(", ")}`);
         console.log(`   kana: ${kanaTexts.join(", ")}`);
-        console.log(`   glosses: ${allGlosses.slice(0, 3).join(", ")}${allGlosses.length > 3 ? "..." : ""}`);
+        console.log(`   glosses: ${allGlosses.slice(0, 3)
+          .join(", ")}${allGlosses.length > 3 ? "..." : ""}`);
         passed++;
       } else {
         console.log(`❌ ${check.id}: Validation failed`);
-        console.log(`   hasId: ${hasId}, hasKanji: ${hasKanji}, hasKana: ${hasKana}, hasSense: ${hasSense}`);
-        console.log(`   hasExpectedKanji: ${hasExpectedKanji}, hasExpectedKana: ${hasExpectedKana}`);
-        console.log(`   kanjiHasPriority: ${kanjiHasPriority}, kanaHasPriority: ${kanaHasPriority}, hasGloss: ${hasGloss}`);
+        console.log(`   hasId: ${hasId}, hasKanji: ${hasKanji}, 
+                    hasKana: ${hasKana}, hasSense: ${hasSense}`);
+        console.log(`   hasExpectedKanji: ${hasExpectedKanji}, 
+                    hasExpectedKana: ${hasExpectedKana}`);
+        console.log(`   kanjiHasPriority: ${kanjiHasPriority}, 
+                    kanaHasPriority: ${kanaHasPriority}, hasGloss: ${hasGloss}`);
         failed++;
       }
       console.log("");
@@ -122,11 +138,13 @@ for (const zipPath of ZIP_FILES) {
       const isValid = hasId && hasKEle && hasREle && hasSense;
 
       if (isValid) {
-        console.log(`✅ ${check.id}: Basic structure valid (k_ele, r_ele, sense present)`);
+        console.log(`✅ ${check.id}: Basic structure valid 
+                    (k_ele, r_ele, sense present)`);
         passed++;
       } else {
         console.log(`❌ ${check.id}: Validation failed`);
-        console.log(`   hasId: ${hasId}, hasKEle: ${hasKEle}, hasREle: ${hasREle}, hasSense: ${hasSense}`);
+        console.log(`   hasId: ${hasId}, hasKEle: ${hasKEle}, 
+                    hasREle: ${hasREle}, hasSense: ${hasSense}`);
         failed++;
       }
       console.log("");
