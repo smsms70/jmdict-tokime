@@ -4,7 +4,8 @@ import { zipSync } from "fflate";
 const FILES = [
   { input: "dist/jmdict-tokime.json", output: "dist/jmdict-tokime.json.zip" },
   { input: "dist/jmdict-common.json", output: "dist/jmdict-common.json.zip" },
-  { input: "dist/jpdb-freq-v2.json", output: "dist/jpdb-freq-v2.json.zip" }
+  { input: "dist/jpdb-freq-v2.json", output: "dist/jpdb-freq-v2.json.zip" },
+  { input: "dist/jmdict+jpdb-freq.json", output: "dist/jmdict+jpdb-freq.json.zip" }
 ];
 
 const stats: Record<string, { uncompressedBytes: number; compressedBytes: number; ratio: number }> = {};

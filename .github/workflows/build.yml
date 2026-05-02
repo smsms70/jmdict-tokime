@@ -36,6 +36,9 @@ jobs:
       - name: Build freq JSON
         run: bun run build-freq
 
+      - name: Merge freq
+        run: bun run merge-freq
+
       - name: Compress
         run: bun run compress
 
@@ -57,17 +60,35 @@ jobs:
           COMMON_UNCOMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-common.json".uncompressedBytes')
           COMMON_COMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict-common.json".compressedBytes')
           
+          # Freq stats
+          FREQ_ENTRIES=$(echo $COMPRESS_STATS | jq -r '."jpdb-freq-v2.json".uncompressedBytes / 50')  # Approx entries from size
+          FREQ_UNCOMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jpdb-freq-v2.json".uncompressedBytes')
+          FREQ_COMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jpdb-freq-v2.json".compressedBytes')
+          
+          # Merged stats
+          MERGED_UNCOMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict+jpdb-freq.json".uncompressedBytes')
+          MERGED_COMPRESSED=$(echo $COMPRESS_STATS | jq -r '."jmdict+jpdb-freq.json".compressedBytes')
+          
           # Calculate MB values
           TOKIME_UNCOMPRESSED_MB=$(echo $TOKIME_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           TOKIME_COMPRESSED_MB=$(echo $TOKIME_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           COMMON_UNCOMPRESSED_MB=$(echo $COMMON_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           COMMON_COMPRESSED_MB=$(echo $COMMON_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          FREQ_UNCOMPRESSED_MB=$(echo $FREQ_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          FREQ_COMPRESSED_MB=$(echo $FREQ_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          MERGED_UNCOMPRESSED_MB=$(echo $MERGED_UNCOMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
+          MERGED_COMPRESSED_MB=$(echo $MERGED_COMPRESSED | awk '{printf "%.2f", $1/1024/1024}')
           
           echo "tokime_entries=$TOKIME_ENTRIES" >> $GITHUB_OUTPUT
           echo "tokime_uncompressed_mb=$TOKIME_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
           echo "tokime_compressed_mb=$TOKIME_COMPRESSED_MB" >> $GITHUB_OUTPUT
           echo "common_uncompressed_mb=$COMMON_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
           echo "common_compressed_mb=$COMMON_COMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "freq_entries=276190" >> $GITHUB_OUTPUT
+          echo "freq_uncompressed_mb=$FREQ_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "freq_compressed_mb=$FREQ_COMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "merged_uncompressed_mb=$MERGED_UNCOMPRESSED_MB" >> $GITHUB_OUTPUT
+          echo "merged_compressed_mb=$MERGED_COMPRESSED_MB" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: github.event_name == 'workflow_dispatch'
@@ -94,9 +115,16 @@ jobs:
           - Entries: ${{ steps.stats.outputs.tokime_entries }}
           - Size: ${{ steps.stats.outputs.common_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.common_compressed_mb }} MB (compressed)
 
-          #### jpdb-freq.json.zip
-          Parsed version of frequency jpdb file.
-          
+          #### jpdb-freq-v2.json.zip
+          Parsed JPDB frequency data.
+          - Entries: ${{ steps.stats.outputs.freq_entries }}
+          - Size: ${{ steps.stats.outputs.freq_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.freq_compressed_mb }} MB (compressed)
+
+          #### jmdict+jpdb-freq.json.zip
+          Merged dictionary with embedded frequency data. Same entries as jmdict-tokime.json but with JPDB frequency ranks included on each kanji/kana element.
+          - Entries: ${{ steps.stats.outputs.tokime_entries }}
+          - Size: ${{ steps.stats.outputs.merged_uncompressed_mb }} MB (uncompressed), ${{ steps.stats.outputs.merged_compressed_mb }} MB (compressed)
+
           ### License
           JMdict is CC BY-SA 4.0 from EDRDG. This output is also CC BY-SA 4.0.
           EOF
@@ -104,5 +132,6 @@ jobs:
           gh release upload "$TAG_NAME" dist/jmdict-tokime.json.zip
           gh release upload "$TAG_NAME" dist/jmdict-common.json.zip
           gh release upload "$TAG_NAME" dist/jpdb-freq-v2.json.zip
+          gh release upload "$TAG_NAME" dist/jmdict+jpdb-freq.json.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

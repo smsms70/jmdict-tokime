@@ -4,11 +4,12 @@ import { unzipSync } from "fflate";
 const ZIP_FILES = [
   "dist/jmdict-tokime.json.zip",
   "dist/jmdict-common.json.zip",
+  "dist/jmdict+jpdb-freq.json.zip",
 ];
 
 const SPOT_CHECK_ENTRIES = [
   { id: "1289400", expectedKanji: "こんにちは", expectedKana: "こんにちは" },
-  { id: "1464530", expectedKanji: "日本語", expectedKana: "にほんご" },
+  { id: "1464530", expectedKanji: "日本語", expectedKana: "にほんご", expectedFreqKanji: 4705, expectedFreqKana: 140824 },
   { id: "1507090", expectedKanji: "平仮名", expectedKana: "ひらがな" },
 ];
 
@@ -34,8 +35,9 @@ for (const zipPath of ZIP_FILES) {
   console.log(`Total entries: ${entriesById.size}\n`);
 
   const isTokimeFile = zipPath.includes("tokime");
+  const isMergedFile = zipPath.includes("+jpdb-freq");
 
-  if (isTokimeFile) {
+  if (isTokimeFile || isMergedFile) {
     let passed = 0;
     let failed = 0;
 
@@ -71,6 +73,29 @@ for (const zipPath of ZIP_FILES) {
           .priority && (k as { priority: unknown[] }).priority.length > 0
       );
 
+      // Check for frequency in merged file
+      let freqValid = true;
+      if (isMergedFile && check.expectedFreqKanji) {
+        const kanjiFreq = (entry.kanji as unknown[]).find(
+          (k: unknown) => (k as { text: string }).text === check.expectedKanji
+        ) as { freq?: number } | undefined;
+        const kanaFreq = (entry.kana as unknown[]).find(
+          (k: unknown) => (k as { text: string }).text === check.expectedKana
+        ) as { freq?: number } | undefined;
+        
+        const actualKanjiFreq = kanjiFreq?.freq;
+        const actualKanaFreq = kanaFreq?.freq;
+        
+        if (check.expectedFreqKanji && actualKanjiFreq !== check.expectedFreqKanji) {
+          console.log(`  ⚠️  Frequency mismatch: kanji expected ${check.expectedFreqKanji}, got ${actualKanjiFreq}`);
+          freqValid = false;
+        }
+        if (check.expectedFreqKana && actualKanaFreq !== check.expectedFreqKana) {
+          console.log(`  ⚠️  Frequency mismatch: kana expected ${check.expectedFreqKana}, got ${actualKanaFreq}`);
+          freqValid = false;
+        }
+      }
+
       const allGlosses: string[] = [];
       if (hasSense) {
         for (const sense of entry.sense as unknown[]) {
@@ -91,7 +116,8 @@ for (const zipPath of ZIP_FILES) {
         hasSense &&
         (hasExpectedKanji || hasExpectedKana) &&
         (kanjiHasPriority || kanaHasPriority) &&
-        hasGloss;
+        hasGloss &&
+        freqValid;
 
       if (isValid) {
         console.log(`✅ ${check.id}: ${check.expectedKanji || ""} 
